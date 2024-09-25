@@ -28,62 +28,56 @@ export const addWebsite = async (req, res) => {
 
 // Check the status of the website (up or down)
 export const checkWebsiteStatus = async (req, res) => {
-  try {
-    const websites = await Website.find();
+    try {
+        const websites = await Website.find();
 
-    const statusPromises = websites.map(async (website) => {
-      let status = 'down'; // Default to 'down' if the request fails
+        const statusPromises = websites.map(async (website) => {
+            let status = 'down';
 
-      try {
-        // Increase timeout value if necessary, based on your needs
-        const response = await axios.get(website.url, { timeout: 7000 });
+            try {
+                // Using 'HEAD' method to check website status
+                const response = await axios.head(website.url, { timeout: 5000 });
+                
+                // Check if response status is valid
+                if (response && response.status === 200) {
+                    status = 'up';
+                } else {
+                    console.error(`Invalid response for ${website.url}`);
+                }
+            } catch (error) {
+                console.error(`Error checking ${website.url}: ${error.message}`);
+            }
 
-        if (response && typeof response.status === 'number') {
-          status = response.status === 200 ? 'up' : 'down';
-        } else {
-          console.error(`Invalid or missing response for ${website.url}`);
-        }
-      } catch (error) {
-        // Handle Axios-specific errors more carefully
-        if (error.code === 'ECONNABORTED') {
-          console.error(`Timeout exceeded for ${website.url}: ${error.message}`);
-          // Optionally, consider retrying the request (see below)
-        } else if (error.response && typeof error.response.status === 'number') {
-          // Handle server response errors (e.g., 4xx or 5xx status codes)
-          console.error(`Received error response from ${website.url}: ${error.response.status}`);
-        } else {
-          // Handle other errors (e.g., network issues)
-          console.error(`Error checking ${website.url}: ${error.message}`);
-        }
-      }
+            // Push status into logs
+            website.logs.push({ status });
 
-      website.logs.push({ status });
+            // Handle 'down' case (sending email, etc.)
+            if (status === 'down') {
+                const mailOptions = {
+                    from: 'syedibrahim7252@gmail.com',
+                    to: 'syedirctc45362@gmail.com',
+                    subject: `Website Down: ${website.url}`,
+                    text: `The website ${website.url} appears to be down.`,
+                };
+                try {
+                    await transporter.sendMail(mailOptions);
+                } catch (mailError) {
+                    console.error(`Failed to send email for ${website.url}: ${mailError.message}`);
+                }
+            }
 
-      if (status === 'down') {
-        const mailOptions = {
-          from: 'syedibrahim7252@gmail.com',  // Sender address
-          to: 'syedirctc45362@gmail.com',         // List of receivers
-          subject: `Website Down: ${website.url}`,  // Subject line
-          text: `The website ${website.url} appears to be down. Please check.`  // Plain text body
-        };
-        try {
-          await transporter.sendMail(mailOptions); // Handle email sending errors
-        } catch (mailError) {
-          console.error(`Failed to send email for ${website.url}: ${mailError.message}`);
-        }
-      }
+            await website.save();
+        });
 
-      await website.save();
-    });
+        await Promise.all(statusPromises);
 
-    await Promise.all(statusPromises);
-
-    res.status(200).json(websites);
-  } catch (globalError) {
-    console.error(`Failed to check website status: ${globalError.message}`);
-    res.status(500).json({ error: 'Failed to check website status' });
-  }
+        res.status(200).json(websites);
+    } catch (globalError) {
+        console.error(`Failed to check website status: ${globalError.message}`);
+        res.status(500).json({ error: 'Failed to check website status' });
+    }
 };
+
 
 // Get logs of a website
 export const getWebsiteLogs = async (req, res) => {
