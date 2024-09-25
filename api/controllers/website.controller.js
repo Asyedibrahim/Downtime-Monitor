@@ -28,64 +28,61 @@ export const addWebsite = async (req, res) => {
 
 // Check the status of the website (up or down)
 export const checkWebsiteStatus = async (req, res) => {
-    try {
-        const websites = await Website.find();
-        const statusPromises = websites.map(async (website) => {
-            let status = 'down'; // Default to 'down'
+  try {
+    const websites = await Website.find();
 
-            try {
-                // Make the request with a timeout of 5 seconds
-                const response = await axios.get(website.url, { timeout: 5000 });
+    const statusPromises = websites.map(async (website) => {
+      let status = 'down'; // Default to 'down' if the request fails
 
-                // Only access status if the response exists and has a valid status
-                if (response && response.status !== undefined) {
-                    status = response.status === 200 ? 'up' : 'down';
-                } else {
-                    console.log(`Invalid response or status missing for ${website.url}`);
-                }
+      try {
+        // Increase timeout value if necessary, based on your needs
+        const response = await axios.get(website.url, { timeout: 7000 });
 
-                // Log the status to the website logs
-                website.logs.push({ status });
+        if (response && typeof response.status === 'number') {
+          status = response.status === 200 ? 'up' : 'down';
+        } else {
+          console.error(`Invalid or missing response for ${website.url}`);
+        }
+      } catch (error) {
+        // Handle Axios-specific errors more carefully
+        if (error.code === 'ECONNABORTED') {
+          console.error(`Timeout exceeded for ${website.url}: ${error.message}`);
+          // Optionally, consider retrying the request (see below)
+        } else if (error.response && typeof error.response.status === 'number') {
+          // Handle server response errors (e.g., 4xx or 5xx status codes)
+          console.error(`Received error response from ${website.url}: ${error.response.status}`);
+        } else {
+          // Handle other errors (e.g., network issues)
+          console.error(`Error checking ${website.url}: ${error.message}`);
+        }
+      }
 
-                if (status === 'down') {
-                    // Send an email alert if the website is down
-                    const mailOptions = {
-                        from: 'syedibrahim7252@gmail.com',
-                        to: 'syedirctc45362@gmail.com',
-                        subject: `Alert: ${website.url} is down!`,
-                        text: `The website ${website.url} is currently down. Please check immediately.`,
-                    };
+      website.logs.push({ status });
 
-                    await transporter.sendMail(mailOptions);
-                }
+      if (status === 'down') {
+        const mailOptions = {
+          from: 'syedibrahim7252@gmail.com',  // Sender address
+          to: 'syedirctc45362@gmail.com',         // List of receivers
+          subject: `Website Down: ${website.url}`,  // Subject line
+          text: `The website ${website.url} appears to be down. Please check.`  // Plain text body
+        };
+        try {
+          await transporter.sendMail(mailOptions); // Handle email sending errors
+        } catch (mailError) {
+          console.error(`Failed to send email for ${website.url}: ${mailError.message}`);
+        }
+      }
 
-            } catch (error) {
-                // Handle the case where the request times out or fails
-                console.error(`Error checking ${website.url}:`, error.message);
-                website.logs.push({ status: 'down' });
+      await website.save();
+    });
 
-                // Send an email alert when the website is down due to an error
-                const mailOptions = {
-                    from: 'syedibrahim7252@gmail.com',
-                    to: 'syedirctc45362@gmail.com',
-                    subject: `Alert: ${website.url} is down!`,
-                    text: `The website ${website.url} is currently down due to an error: ${error.message}. Please check immediately.`,
-                };
+    await Promise.all(statusPromises);
 
-                await transporter.sendMail(mailOptions);
-            }
-
-            // Save the updated logs to the database
-            await website.save();
-        });
-
-        // Wait for all status checks to complete
-        await Promise.all(statusPromises);
-        res.status(200).json(websites);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to check website status' });
-    }
+    res.status(200).json(websites);
+  } catch (globalError) {
+    console.error(`Failed to check website status: ${globalError.message}`);
+    res.status(500).json({ error: 'Failed to check website status' });
+  }
 };
 
 // Get logs of a website
