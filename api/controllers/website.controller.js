@@ -71,7 +71,6 @@ export const checkWebsiteStatus = async (req, res) => {
                 }
             }
 
-            // Save the website status logs
             await website.save();
         });
 
