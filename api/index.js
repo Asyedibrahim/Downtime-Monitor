@@ -25,10 +25,10 @@ app.use(express.json());
 // Use the routes
 app.use('/api/websites', websiteRoutes);
 
-app.use(express.static(path.join(__dirname, '/client/dist')));
+app.use(express.static(path.join(__dirname, '/frontend/dist')));
 
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+    res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
 })
 
 // Schedule website status checks every 30 minutes

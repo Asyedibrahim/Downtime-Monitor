@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon api/index.js",
     "start": "node api/index.js",
-    "build": "npm install && npm install --prefix client && npm run build --prefix client"
+    "build": "npm install && npm install --prefix frontend && npm run build --prefix frontend"
   },
   "keywords": [],
   "author": "",
@@ -22,5 +22,10 @@
     "nodemailer": "^6.9.15",
     "nodemon": "^3.1.7",
     "p-limit": "^6.1.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node-cron": "^3.0.11"
   }
 }

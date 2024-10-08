@@ -29,55 +29,69 @@ export const addWebsite = async (req, res) => {
 // Check the status of the website (up or down)
 export const checkWebsiteStatus = async (req, res) => {
     try {
-        const websites = await Website.find();
+        const websites = await Website.find(); // Fetch all websites from the database
 
+        // Check status for each website
         const statusPromises = websites.map(async (website) => {
-            let status = 'down';
+            let status = 'down'; // Default status
 
             try {
-                // Using 'HEAD' method to check website status
-                const response = await axios.head(website.url, { timeout: 5000 });
-                
-                // Check if response status is valid
+                // Send a 'HEAD' request with a 7000ms timeout
+                const response = await axios.head(website.url, { timeout: 7000 });
+
+                // Check if the response is valid and status is 200
                 if (response && response.status === 200) {
-                    status = 'up';
-                } else {
-                    console.error(`Invalid response for ${website.url}`);
+                    status = 'up'; // Update status to 'up'
                 }
             } catch (error) {
                 console.error(`Error checking ${website.url}: ${error.message}`);
+                // Handle timeout or connection errors
+                if (error.code === 'ECONNABORTED') {
+                    console.error(`Timeout for ${website.url}: ${error.message}`);
+                }
             }
 
-            // Push status into logs
+            // Append the status to website logs
             website.logs.push({ status });
 
-            // Handle 'down' case (sending email, etc.)
+            // Send email alert if website is down
             if (status === 'down') {
                 const mailOptions = {
                     from: 'syedibrahim7252@gmail.com',
-                    to: 'syedirctc45362@gmail.com',
+                    to: 'syedirctc45362@gmail.com, bharath.mv@gmail.com, jeevadharshinibala2001@gmail.com, ramvijayaravi@gmail.com',
                     subject: `Website Down: ${website.url}`,
                     text: `The website ${website.url} appears to be down.`,
                 };
+
                 try {
                     await transporter.sendMail(mailOptions);
+                    console.log(`Email sent for ${website.url}`);
                 } catch (mailError) {
                     console.error(`Failed to send email for ${website.url}: ${mailError.message}`);
                 }
             }
 
+            // Save the website status logs
             await website.save();
         });
 
+        // Wait for all status checks to complete
         await Promise.all(statusPromises);
 
-        res.status(200).json(websites);
+        // Ensure response is sent only once
+        if (res && !res.headersSent) {
+            return res.status(200).json(websites);
+        }
+
     } catch (globalError) {
         console.error(`Failed to check website status: ${globalError.message}`);
-        res.status(500).json({ error: 'Failed to check website status' });
+
+        // Check if the response object exists and headers are not already sent
+        if (res && !res.headersSent) {
+            return res.status(500).json({ error: 'Failed to check website status' });
+        }
     }
 };
-
 
 // Get logs of a website
 export const getWebsiteLogs = async (req, res) => {
