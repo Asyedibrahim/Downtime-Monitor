@@ -103,7 +103,7 @@ export const getWebsiteLogs = async (req, res) => {
     }
 };
 
-// Get logs of a website
+// Get urls of a website
 export const getWebsiteUrls = async (req, res) => {
     const { id } = req.params;
     try {
