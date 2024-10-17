@@ -58,7 +58,7 @@ export const checkWebsiteStatus = async (req, res) => {
             if (status === 'down') {
                 const mailOptions = {
                     from: 'syedibrahim7252@gmail.com',
-                    to: 'syedirctc45362@gmail.com, bharath.mv@gmail.com, jeevadharshinibala2001@gmail.com, ramvijayaravi@gmail.com',
+                    to: 'syedirctc45362@gmail.com, bharath.mv@gmail.com, jeevadharshinibala2001@gmail.com, ramvijayaravi@gmail.com, deep.cse88@gmail.com',
                     subject: `Website Down: ${website.url}`,
                     text: `The website ${website.url} appears to be down.`,
                 };
