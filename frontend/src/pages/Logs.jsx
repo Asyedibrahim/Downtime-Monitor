@@ -39,7 +39,7 @@ const Logs = () => {
 
   return (
     <div className="bg-cover min-h-screen" style={{ backgroundImage: `url(${back2})` }}>
-      <div className="backdrop-blur-sm min-h-screen flex flex-col">
+      <div className="backdrop-blur-sm min-h-screen flex flex-col overflow-x-auto">
         <div className="mx-auto max-w-7xl py-10 lg:px-2 flex-grow">
           <div className="rounded-3xl overflow-hidden sm:mt-2">
             <div className="sm:p-5 lg:flex lg:flex-col lg:items-center">
@@ -104,8 +104,8 @@ const Logs = () => {
           </div>
         </div>
         {/* Footer */}
-        <Foot />
       </div>
+        <Foot />
     </div>
   );
 };

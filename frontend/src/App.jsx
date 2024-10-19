@@ -18,7 +18,7 @@ function App() {
     useEffect(() => {
         switch (location.pathname) {
           case '/':
-            document.title = 'Dashboard | List';
+            document.title = 'Downtime | Urls';
             break;
           case '/add':
             document.title = 'Downtime | Add url';
